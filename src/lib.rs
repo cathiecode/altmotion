@@ -18,17 +18,17 @@ pub mod core {
         Poly(Vec<Triangle>)
     }
 
-    pub struct Object<T> {
-        pub image: T,
+    pub struct Object<'a, T> {
+        pub image: &'a T,
         pub shape: Vec<Shape>,
     }
 
-    pub struct Layer<T> {
-        pub objects: Vec<Object<T>>
+    pub struct Layer<'a, T> {
+        pub objects: Vec<Object<'a, T>>
     }
 
-    pub struct Scene<T> {
-        pub layer: Vec<Layer<T>>,
+    pub struct Scene<'a, T> {
+        pub layer: Vec<Layer<'a, T>>,
         pub width: u32,
         pub height: u32
     }
