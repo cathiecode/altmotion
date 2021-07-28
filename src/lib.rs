@@ -240,16 +240,6 @@ pub mod wgpu_renderer {
             if let Ok(()) = buffer_future.await {
                 let padded_buffer = buffer_slice.get_mapped_range();
 
-                /*
-                png_encoder.set_depth(png::BitDepth::Eight);
-                png_encoder.set_color(png::ColorType::RGBA);
-                */
-                /*let mut png_writer = png_encoder
-                    .write_header()
-                    .unwrap()
-                    .into_stream_writer_with_size(buffer_dimensions.unpadded_bytes_per_row);*/
-        
-                // from the padded_buffer we write just the unpadded bytes into the image
                 let mut offset = 0;
                 let data = output.data_mut();
                 for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
@@ -258,14 +248,7 @@ pub mod wgpu_renderer {
                     }
 
                     offset += buffer_dimensions.unpadded_bytes_per_row;
-                    /*png_writer
-                        .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
-                        .unwrap();*/
                 }
-                /*png_writer.finish().unwrap();*/
-        
-                // With the current interface, we have to make sure all mapped views are
-                // dropped before we unmap the buffer.
                 drop(padded_buffer);
         
                 output_buffer.unmap();
