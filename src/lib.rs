@@ -48,39 +48,6 @@ pub mod renderer {
     }
 }
 
-pub mod tinyskia_renderer {
-    use crate::renderer;
-    use crate::core;
-    use async_trait::async_trait;
-    use tiny_skia::Pixmap;
-
-    pub struct TSkiaRenderer {
-        
-    }
-
-    impl TSkiaRenderer {
-        pub fn new() -> Self {
-            TSkiaRenderer {}
-        }
-    }
-
-    #[async_trait]
-    impl renderer::Renderer for TSkiaRenderer {
-        type Image = Pixmap;
-        fn render(&mut self, scene: core::Scene<Self::Image>, dest: &Self::Image) {
-            todo!();
-        }
-
-        fn into_image(&mut self, image: tiny_skia::Pixmap) -> Self::Image {
-            image
-        }
-
-        async fn into_bitmap(&mut self, image: Self::Image) -> tiny_skia::Pixmap {
-            image
-        }
-    }
-}
-
 pub mod wgpu_renderer {
     use std::ops::Deref;
     use std::usize;
