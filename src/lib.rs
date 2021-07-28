@@ -82,6 +82,7 @@ pub mod tinyskia_renderer {
 }
 
 pub mod wgpu_renderer {
+    use std::ops::Deref;
     use std::usize;
 
     use crate::renderer;
@@ -186,6 +187,48 @@ pub mod wgpu_renderer {
                 usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
                 mapped_at_creation: false,
             });
+
+            let command_buffer = {
+                let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {label: Some("into_bitmap")});
+                encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("into_bitmap_copy_pass"),
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view: &image.texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Load,
+                            store: true
+                        }
+                    }],
+                    depth_stencil_attachment: None,
+                });
+                encoder.copy_texture_to_buffer(
+                    wgpu::ImageCopyTexture {
+                        texture: &image.texture,
+                        mip_level: 0,
+                        origin: wgpu::Origin3d::ZERO
+                    },
+                    wgpu::ImageCopyBuffer {
+                        buffer: &output_buffer,
+                        layout: wgpu::ImageDataLayout {
+                            offset: 0,
+                            bytes_per_row: Some(
+                                std::num::NonZeroU32::new(buffer_dimensions.padded_bytes_per_row as u32)
+                                    .unwrap(),
+                            ),
+                            rows_per_image: None,
+                        },
+                    },
+                    wgpu::Extent3d {
+                        width: image.width as u32,
+                        height: image.height as u32,
+                        depth_or_array_layers: 1,
+                    },
+                );
+                encoder.finish()
+            };
+
+            self.queue.submit(Some(command_buffer));
 
             let buffer_slice = output_buffer.slice(..);
             let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
