@@ -14,21 +14,23 @@ fn main() {
 
     let canvas = renderer.into_image(Pixmap::new(1920, 1080).unwrap());
 
-    loop {
-        let scene = Scene {
-            width: 1920,
-            height: 1080,
-            layer: vec![Layer {
-                objects: vec![
-                    Object {
-                        shape: vec![Shape::Triangle(Triangle(Vertex(250.0, 0.0, 0.0, 0.0, 0.0), Vertex(500.0, 500.0, 0.0, 0.0, 0.0), Vertex(0.0, 500.0, 0.0, 0.0, 0.0)))],
-                        image: &image
-                    }
-                ]
-            }]
-        };
+    let mut bit_canvas = Pixmap::new(1920, 1080).unwrap();
 
-        block_on(renderer.into_bitmap(&canvas));
+    let scene = Scene {
+        width: 1920,
+        height: 1080,
+        layer: vec![Layer {
+            objects: vec![
+                Object {
+                    shape: vec![Shape::Triangle(Triangle(Vertex(250.0, 0.0, 0.0, 0.0, 0.0), Vertex(500.0, 500.0, 0.0, 0.0, 0.0), Vertex(0.0, 500.0, 0.0, 0.0, 0.0)))],
+                    image: &image
+                }
+            ]
+        }]
+    };
+
+    loop {
+        block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
         println!("done");
     }
     

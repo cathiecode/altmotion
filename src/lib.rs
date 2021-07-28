@@ -44,7 +44,7 @@ pub mod renderer {
         type Image;
         fn render(&mut self, scene: core::Scene<Self::Image>, dest: &Self::Image); // TODO: TargetをImageで受けとるようにする
         fn into_image(&mut self, bitmap: Pixmap) -> Self::Image;
-        async fn into_bitmap(&mut self, image: Self::Image) -> Pixmap;
+        async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap);
     }
 }
 
@@ -146,8 +146,11 @@ pub mod wgpu_renderer {
             };
         }
 
-        async fn into_bitmap(&mut self, image: Self::Image) -> tiny_skia::Pixmap {
+        async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap) {
             let buffer_dimensions = BufferDimensions::new(image.width, image.height);
+            if buffer_dimensions.width as u32 != dest.width() || buffer_dimensions.height as u32 != dest.height() {
+                panic!("Width or height is mismatch!");
+            }
             let output_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
                 label: None,
                 size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
@@ -201,14 +204,12 @@ pub mod wgpu_renderer {
             let buffer_future = buffer_slice.map_async(wgpu::MapMode::Read);
 
             self.device.poll(wgpu::Maintain::Wait);
-            
-            let mut output = Pixmap::new(buffer_dimensions.width as u32, buffer_dimensions.height as u32).unwrap();
 
             if let Ok(()) = buffer_future.await {
                 let padded_buffer = buffer_slice.get_mapped_range();
 
                 let mut offset = 0;
-                let data = output.data_mut();
+                let data = dest.data_mut();
                 for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
                     for (i, &byte) in chunk.iter().enumerate() {
                         data[offset + i] = byte;
@@ -220,8 +221,6 @@ pub mod wgpu_renderer {
         
                 output_buffer.unmap();
             }
-
-            output
         }
     }
 
