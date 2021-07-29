@@ -61,7 +61,9 @@ pub mod wgpu_renderer {
     pub struct WGpuTexture {
         pub texture: wgpu::Texture,
         pub width: usize,
-        pub height: usize
+        pub height: usize,
+        pub buffer: wgpu::Buffer,
+        pub buffer_dimensions: BufferDimensions
     }
 
     pub struct WGpuRenderer {
@@ -121,6 +123,13 @@ pub mod wgpu_renderer {
                 format: wgpu::TextureFormat::Rgba8Uint,
                 usage: wgpu::TextureUsage::all(), // OPTIMIZE: Performance problem
             });
+            let buffer_dimensions = BufferDimensions::new(image.width() as usize, image.height() as usize);
+            let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+                label: None,
+                size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
+                usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
+                mapped_at_creation: false,
+            });
             println!("Width: {}", image.width());
             self.queue.write_texture(
                 wgpu::ImageCopyTexture {
@@ -141,22 +150,16 @@ pub mod wgpu_renderer {
 
             return WGpuTexture {
                 texture,
+                buffer,
+                buffer_dimensions,
                 width: image.width() as usize,
-                height: image.height() as usize
+                height: image.height() as usize,
             };
         }
 
         async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap) {
-            let buffer_dimensions = BufferDimensions::new(image.width, image.height);
-            if buffer_dimensions.width as u32 != dest.width() || buffer_dimensions.height as u32 != dest.height() {
-                panic!("Width or height is mismatch!");
-            }
-            let output_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
-                label: None,
-                size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
-                usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
-                mapped_at_creation: false,
-            });
+            let output_buffer = &image.buffer;
+            let buffer_dimensions = &image.buffer_dimensions;
 
             let command_buffer = {
                 let mut encoder = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {label: Some("into_bitmap")});
@@ -211,11 +214,9 @@ pub mod wgpu_renderer {
                 let mut offset = 0;
                 let data = dest.data_mut();
                 for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
-                    for (i, &byte) in chunk.iter().enumerate() {
-                        data[offset + i] = byte;
-                    }
+                    data[offset..offset + buffer_dimensions.padded_bytes_per_row].copy_from_slice(chunk);
 
-                    offset += buffer_dimensions.unpadded_bytes_per_row;
+                    offset += buffer_dimensions.unpadded_bytes_per_row; // FIXME: 多分壊れてる
                 }
                 drop(padded_buffer);
         
@@ -224,7 +225,7 @@ pub mod wgpu_renderer {
         }
     }
 
-    struct BufferDimensions {
+    pub struct BufferDimensions {
         width: usize,
         height: usize,
         unpadded_bytes_per_row: usize,

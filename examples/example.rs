@@ -6,16 +6,22 @@ use tiny_skia::Pixmap;
 use async_std::task::block_on;
 
 fn main() {
+    println!("create renderer");
     let mut renderer = block_on(WGpuRenderer::new());
 
+    println!("load image");
     let mut initial_image = Pixmap::load_png("texture.png").unwrap();
 
+    println!("create image");
     let mut image = renderer.into_image(initial_image);
 
+    println!("create canvas");
     let canvas = renderer.into_image(Pixmap::new(1920, 1080).unwrap());
 
+    println!("create bitmap output");
     let mut bit_canvas = Pixmap::new(1920, 1080).unwrap();
 
+    println!("build scene");
     let scene = Scene {
         width: 1920,
         height: 1080,
@@ -29,10 +35,11 @@ fn main() {
         }]
     };
 
-    loop {
-        block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
-        println!("done");
-    }
-    
-    //.save_png("test.png").unwrap();
+    println!("into bitmap");
+    block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+
+    println!("save to png");
+    bit_canvas.save_png("test.png").unwrap();
+
+    println!("done");
 }
