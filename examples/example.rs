@@ -4,8 +4,11 @@ use altmotion::wgpu_renderer::*;
 use tiny_skia::Pixmap;
 
 use async_std::task::block_on;
+use renderdoc::{RenderDoc, V100, V110};
 
 fn main() {
+    env_logger::init();
+    let mut rd: RenderDoc<V110> = RenderDoc::new().expect("Unable to connect");
     println!("create renderer");
     let mut renderer = block_on(WGpuRenderer::new());
 
@@ -36,7 +39,9 @@ fn main() {
     };
 
     println!("render");
+    rd.start_frame_capture(std::ptr::null(), std::ptr::null());
     renderer.render(scene, &canvas);
+    rd.end_frame_capture(std::ptr::null(), std::ptr::null());
 
     println!("into bitmap");
     block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));

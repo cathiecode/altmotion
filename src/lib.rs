@@ -129,7 +129,7 @@ pub mod wgpu_renderer {
                                 visibility: wgpu::ShaderStage::FRAGMENT,
                                 ty: wgpu::BindingType::Texture {
                                     multisampled: false,
-                                    sample_type: wgpu::TextureSampleType::Uint,
+                                    sample_type: wgpu::TextureSampleType::Float{filterable: true},
                                     view_dimension: wgpu::TextureViewDimension::D2,
                                 },
                                 count: None,
@@ -173,13 +173,13 @@ pub mod wgpu_renderer {
                         step_mode: wgpu::InputStepMode::Vertex,
                         attributes: &[
                             wgpu::VertexAttribute {
-                                format: wgpu::VertexFormat::Float32x4,
+                                format: wgpu::VertexFormat::Float32x3,
                                 offset: 0,
                                 shader_location: 0,
                             },
                             wgpu::VertexAttribute {
                                 format: wgpu::VertexFormat::Float32x2,
-                                offset: 4 * 4,
+                                offset: 4 * 3,
                                 shader_location: 1,
                             },
                         ],
@@ -200,8 +200,7 @@ pub mod wgpu_renderer {
                             targets: &[sc_desc.format.into()],
                         }),
                         primitive: wgpu::PrimitiveState {
-                            cull_mode: Some(wgpu::Face::Back),
-                            ..Default::default()
+                            cull_mode: Some(wgpu::Face::Back), // TODO: あやしい
                         },
                         depth_stencil: None,
                         multisample: wgpu::MultisampleState::default(),
@@ -211,44 +210,52 @@ pub mod wgpu_renderer {
                     
                     let texture_view = dest.texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-                    let mut vertex_buffers = Vec::<Buffer>::new();
+                    let mut vertex_buffers = Vec::<(&core::Shape, Buffer)>::new();
 
-                    let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                        label: None,
-                        color_attachments: &[wgpu::RenderPassColorAttachment {
-                            view: &texture_view,
-                            resolve_target: None,
-                            ops: wgpu::Operations {
-                                load: wgpu::LoadOp::Load,
-                                store: true,
-                            },
-                        }],
-                        depth_stencil_attachment: None,
-                    });
-
-                    rpass.set_pipeline(&pipeline);
-                    
-                    //rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
-                    
-                    //rpass.draw_indexed(0..index_count as u32, 0, 0..1);
-
-                    /**/
-
-                    for shape in &object.shape {
-                        let vertex_data: &[core::Vertex] = match(shape) {
-                            core::Shape::Triangle(tri) => tri
-                        };
-
-                        self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                            label: Some("Vertex Buffer"),
-                            contents: bytemuck::cast_slice(&vertex_data),
-                            usage: wgpu::BufferUsage::VERTEX,
+                    {
+                        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                            label: None,
+                            color_attachments: &[wgpu::RenderPassColorAttachment {
+                                view: &texture_view,
+                                resolve_target: None,
+                                ops: wgpu::Operations {
+                                    load: wgpu::LoadOp::Load,
+                                    store: true,
+                                },
+                            }],
+                            depth_stencil_attachment: None,
                         });
 
-                        rpass.set_bind_group(0, &bind_group, &[]);
-                        rpass.set_vertex_buffer(0, vertex_buffers.last().unwrap().slice(..));
-                        rpass.draw(0..1, 0..1);
+                        rpass.set_pipeline(&pipeline);
+                        
+                        //rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
+                        
+                        //rpass.draw_indexed(0..index_count as u32, 0, 0..1);
+
+                        /**/
+
+                        for shape in &object.shape {
+                            let vertex_data: &[core::Vertex] = match(shape) {
+                                core::Shape::Triangle(tri) => tri
+                            };
+
+                            vertex_buffers.push((
+                                &shape,
+                                self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                                    label: Some("Vertex Buffer"),
+                                    contents: bytemuck::cast_slice(&vertex_data),
+                                    usage: wgpu::BufferUsage::VERTEX,
+                                })
+                            ));
+                        }
+
+                        for vertex_buffer in &vertex_buffers {
+                            rpass.set_bind_group(0, &bind_group, &[]);
+                            rpass.set_vertex_buffer(0, vertex_buffer.1.slice(..));
+                            rpass.draw(0..3, 0..1); // TODO: Triangle以外だと3ではいけない
+                        }
                     }
+                    self.queue.submit(Some(encoder.finish()));
                 }
             }
         }
@@ -265,8 +272,8 @@ pub mod wgpu_renderer {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8Uint,
-                usage: wgpu::TextureUsage::all(), // OPTIMIZE: Performance problem
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsage::all() & !(wgpu::TextureUsage::STORAGE), // OPTIMIZE: Performance problem
             });
             let buffer_dimensions = BufferDimensions::new(image.width() as usize, image.height() as usize);
             let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
