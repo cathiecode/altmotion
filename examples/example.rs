@@ -25,15 +25,18 @@ fn main() {
     let scene = Scene {
         width: 1920,
         height: 1080,
-        layer: vec![Layer {
+        layers: vec![Layer {
             objects: vec![
                 Object {
-                    shape: vec![Shape::Triangle(Triangle(Vertex(250.0, 0.0, 0.0, 0.0, 0.0), Vertex(500.0, 500.0, 0.0, 0.0, 0.0), Vertex(0.0, 500.0, 0.0, 0.0, 0.0)))],
+                    shape: vec![Shape::Triangle([Vertex(250.0, 0.0, 0.0, 0.0, 0.0), Vertex(500.0, 500.0, 0.0, 0.0, 0.0), Vertex(0.0, 500.0, 0.0, 0.0, 0.0)])],
                     image: &image
                 }
             ]
         }]
     };
+
+    println!("render");
+    renderer.render(scene, &canvas);
 
     println!("into bitmap");
     block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
