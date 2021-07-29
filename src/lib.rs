@@ -28,7 +28,7 @@ pub mod core {
     }
 
     pub struct Scene<'a, T> {
-        pub layer: Vec<Layer<'a, T>>,
+        pub layers: Vec<Layer<'a, T>>,
         pub width: u32,
         pub height: u32
     }
@@ -105,7 +105,14 @@ pub mod wgpu_renderer {
     impl renderer::Renderer for WGpuRenderer {
         type Image = WGpuTexture;
         fn render(&mut self, scene: core::Scene<Self::Image>, dest: &Self::Image) {
-            todo!();
+            for layer in &scene.layers {
+                for object in &layer.objects {
+                    let image = object.image;
+                    for shape in &object.shape {
+                        todo!()
+                    }
+                }
+            }
         }
 
         fn into_image(&mut self, image: tiny_skia::Pixmap) -> Self::Image {
