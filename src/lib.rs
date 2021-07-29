@@ -201,6 +201,7 @@ pub mod wgpu_renderer {
                         }),
                         primitive: wgpu::PrimitiveState {
                             cull_mode: Some(wgpu::Face::Back), // TODO: あやしい
+                            ..wgpu::PrimitiveState::default()
                         },
                         depth_stencil: None,
                         multisample: wgpu::MultisampleState::default(),
