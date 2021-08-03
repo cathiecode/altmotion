@@ -45,6 +45,68 @@ pub mod core {
     }
 }
 
+pub mod object {
+    pub struct ObjectRenderContext {
+        
+    }
+
+    pub trait Object<T> {
+        fn render(context: &ObjectRenderContext) -> crate::core::Object<T>;
+    }
+}
+
+pub mod project {
+    use std::collections::{BTreeMap, HashMap};
+
+    type Id = String;
+
+    pub enum Interpolator {
+        Linear,
+        Custom(Id)
+    }
+
+    pub struct Interpolable<T> { // NOTE: end_valueの位置はinterpolatorに渡して補間してもらう
+        pub start_value: T,
+        pub values: BTreeMap<u32, T>,
+        pub end_value: T,
+        pub interpolator: Interpolator
+    }
+
+    pub enum ObjectPropValue {
+        Integer(Interpolable<u64>),
+        Real(Interpolable<f64>)
+    }
+
+    pub struct ObjectProp {
+        pub name: String,
+        pub id: Id,
+        pub value: ObjectPropValue
+    }
+
+    pub struct Object {
+        pub name: String,
+        pub layer: u32,
+        pub start: u32,
+        pub end: u32,
+        pub props: Vec<ObjectProp>,
+        // pub composite_mode: CompositeMode, // + 描画なしモードもここに(clip用)
+        // pub clip_by: Id // Object clipping,
+    }
+
+    pub struct Layer {
+        pub name: String
+    }
+
+    pub struct Scene {
+        pub layers: Vec<Layer>,
+        pub objects: HashMap<Id, Object>
+    }
+    
+    pub struct Project {
+        pub scenes: Scene
+    }
+}
+
 pub mod renderer {
     use crate::core;
     use async_trait::async_trait;
