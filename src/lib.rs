@@ -46,12 +46,18 @@ pub mod core {
 }
 
 pub mod clip {
+    use std::collections::HashMap;
+
+    type Id = &'static str;
+
+    pub type ClipRegistory<T> = HashMap<Id, Box<dyn Clip<T>>>;
+
     pub struct ClipRenderContext {
         
     }
 
     pub trait Clip<T> {
-        fn new() -> Box<dyn ClipRenderer<T>>;
+        fn new(&mut self) -> Box<dyn ClipRenderer<T>>;
     }
 
     pub trait ClipRenderer<T> {
@@ -60,9 +66,11 @@ pub mod clip {
 }
 
 pub mod clips {
-    use crate::clip::{Clip, ClipRenderer, ClipRenderContext};
+    use std::collections::HashMap;
 
-    pub struct NullClip {
+    use crate::clip::{Clip, ClipRegistory, ClipRenderContext, ClipRenderer};
+
+    pub struct NullClipRenderer {
 
     }
 
@@ -72,10 +80,18 @@ pub mod clips {
         }
     }
 
+    pub struct NullClip;
+
     impl<T> Clip<T> for NullClip {
-        fn new() -> Box<dyn ClipRenderer<T>> {
+        fn new(&mut self) -> Box<dyn ClipRenderer<T>> {
             Box::new(NullClip {})
         }
+    }
+
+    fn builtin_clip_registory<T>() -> ClipRegistory<T> {
+        let mut reg: ClipRegistory<T> = HashMap::new();
+        reg.insert("altmotion.builtin.null", Box::new(NullClip));
+        reg
     }
 }
 
@@ -147,21 +163,25 @@ pub mod renderer {
 }
 
 pub mod sequence_renderer {
-    use crate::{project::Sequence, renderer::Renderer};
+    use crate::{clip::{ClipRegistory, ClipRenderer}, project::Sequence, renderer::Renderer};
 
-    pub struct SequenceRenderer<'a, 'b, T> where T: Renderer {
+    pub struct SequenceRenderer<'a, T> where T: Renderer {
         renderer: &'a T,
-        sequence: &'b Sequence,
+        clip_registory: &'a ClipRegistory<T>,
+        sequence: &'a Sequence,
 
-        current_frame: u32
+        current_frame: u32,
+        clip_renderers: Vec<Box<dyn ClipRenderer<T>>>
     }
 
-    impl<'a, 'b, T> SequenceRenderer<'a, 'b, T> where T: Renderer {
-        fn new<V>(renderer: &'a V, sequence: &'b Sequence) -> SequenceRenderer<'a, 'b, V> where V: Renderer {
+    impl<'a, T> SequenceRenderer<'a, T> where T: Renderer {
+        fn new<V>(renderer: &'a V, clip_registory: &'a ClipRegistory<V>, sequence: &'a Sequence) -> SequenceRenderer<'a, V> where V: Renderer {
             SequenceRenderer {
                 renderer,
+                clip_registory,
                 sequence,
-                current_frame: 0
+                current_frame: 0,
+                clip_renderers: Vec::new()
             }
         }
 
