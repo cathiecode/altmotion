@@ -77,6 +77,9 @@ pub mod wgpu_renderer {
         pub height: usize,
         pub buffer: wgpu::Buffer,
         pub buffer_dimensions: BufferDimensions,
+        pub default_view: wgpu::TextureView,
+        pub render_pipeline: wgpu::RenderPipeline,
+        pub bind_group: wgpu::BindGroup
     }
 
     pub struct WGpuRenderer<'a> {
@@ -213,49 +216,11 @@ pub mod wgpu_renderer {
                 for object in &layer.objects {
                     let image = object.image;
                     // TODO: bind_groupとpipelineをImageにもたせて使いまわす
-                    let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.bind_group_layout,
-                        entries: &[wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::TextureView(
-                                &image
-                                    .texture
-                                    .create_view(&wgpu::TextureViewDescriptor::default()),
-                            ),
-                        }],
-                        label: None,
-                    });
 
-                    let pipeline =
-                        self.device
-                            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                                label: None,
-                                layout: Some(&self.pipeline_layout),
-                                vertex: wgpu::VertexState {
-                                    module: &self.shader,
-                                    entry_point: "vs_main",
-                                    buffers: &self.vertex_buffers, // TODO
-                                },
-                                fragment: Some(wgpu::FragmentState {
-                                    module: &self.shader,
-                                    entry_point: "fs_main",
-                                    targets: &[sc_desc.format.into()], // これさえなければ先に作っておけるんですが…
-                                }),
-                                primitive: wgpu::PrimitiveState {
-                                    cull_mode: None, // TODO: あやしい
-                                    ..wgpu::PrimitiveState::default()
-                                },
-                                depth_stencil: None,
-                                multisample: wgpu::MultisampleState::default(),
-                            });
-
-                    let texture_view = dest
-                        .texture
-                        .create_view(&wgpu::TextureViewDescriptor::default());
                     let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: None,
                         color_attachments: &[wgpu::RenderPassColorAttachment {
-                            view: &texture_view,
+                            view: &dest.default_view,
                             resolve_target: None,
                             ops: wgpu::Operations {
                                 load: wgpu::LoadOp::Load,
@@ -265,8 +230,8 @@ pub mod wgpu_renderer {
                         depth_stencil_attachment: None,
                     });
 
-                    rpass.set_pipeline(&pipeline); // HACK: これを複数回動かしたときに、最後のpipelineが適用されるのか
-                    rpass.set_bind_group(0, &bind_group, &[]);
+                    rpass.set_pipeline(&image.render_pipeline); // HACK: これを複数回動かしたときに、最後のpipelineが適用されるのか
+                    rpass.set_bind_group(0, &image.bind_group, &[]);
                     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
 
                     for shape in &object.shape {
@@ -323,12 +288,52 @@ pub mod wgpu_renderer {
 
             self.queue.submit(None);
 
+            let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.bind_group_layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(
+                        &texture
+                            .create_view(&wgpu::TextureViewDescriptor::default()),
+                    ),
+                }],
+                label: None,
+            });
+
+            let render_pipeline =
+                self.device
+                    .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                        label: None,
+                        layout: Some(&self.pipeline_layout),
+                        vertex: wgpu::VertexState {
+                            module: &self.shader,
+                            entry_point: "vs_main",
+                            buffers: &self.vertex_buffers, // TODO
+                        },
+                        fragment: Some(wgpu::FragmentState {
+                            module: &self.shader,
+                            entry_point: "fs_main",
+                            targets: &[TextureFormat::Rgba8UnormSrgb.into()], // これさえなければ先に作っておけるんですが…
+                        }),
+                        primitive: wgpu::PrimitiveState {
+                            cull_mode: None, // TODO: あやしい
+                            ..wgpu::PrimitiveState::default()
+                        },
+                        depth_stencil: None,
+                        multisample: wgpu::MultisampleState::default(),
+                    });
+            
+            let default_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
             return WGpuTexture {
                 texture,
                 buffer,
                 buffer_dimensions,
                 width: image.width() as usize,
                 height: image.height() as usize,
+                bind_group,
+                render_pipeline,
+                default_view
             };
         }
 
