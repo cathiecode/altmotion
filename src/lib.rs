@@ -212,6 +212,7 @@ pub mod wgpu_renderer {
             for layer in &scene.layers {
                 for object in &layer.objects {
                     let image = object.image;
+                    // TODO: bind_groupとpipelineをImageにもたせて使いまわす
                     let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                         layout: &self.bind_group_layout,
                         entries: &[wgpu::BindGroupEntry {
@@ -264,7 +265,7 @@ pub mod wgpu_renderer {
                         depth_stencil_attachment: None,
                     });
 
-                    rpass.set_pipeline(&pipeline);
+                    rpass.set_pipeline(&pipeline); // HACK: これを複数回動かしたときに、最後のpipelineが適用されるのか
                     rpass.set_bind_group(0, &bind_group, &[]);
                     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
 

@@ -25,34 +25,39 @@ fn main() {
     let mut bit_canvas = Pixmap::new(1920, 1080).unwrap();
 
     println!("build scene");
-    let mut shapes: Vec<Shape> = Vec::new();
+    let mut objects: Vec<Object<<WGpuRenderer<'_> as Renderer>::Image>> = Vec::new();
+    for _ in 0..10 {
+        let mut shapes: Vec<Shape> = Vec::new();
 
-    for i in 0..100 {
-        let rad = (i as f32) / 100.0 * std::f32::consts::TAU;
-        let rad2 = ((i + 1) as f32) / 100.0 * std::f32::consts::TAU;
-        shapes.push(Shape::Triangle([Vertex(0.0, 0.0, 0.0, 256.0, 256.0), Vertex(rad.cos(), rad.sin(), 0.0, 256.0 + rad.cos() * 256.0, 256.0 + rad.sin() * 256.0), Vertex(rad2.cos(), rad2.sin(), 0.0, 256.0 + rad2.cos() * 256.0, 256.0 + rad2.sin() * 256.0)]));
+        for i in 0..100 {
+            let rad = (i as f32) / 100.0 * std::f32::consts::TAU;
+            let rad2 = ((i + 1) as f32) / 100.0 * std::f32::consts::TAU;
+            shapes.push(Shape::Triangle([Vertex(0.0, 0.0, 0.0, 256.0, 256.0), Vertex(rad.cos(), rad.sin(), 0.0, 256.0 + rad.cos() * 256.0, 256.0 + rad.sin() * 256.0), Vertex(rad2.cos(), rad2.sin(), 0.0, 256.0 + rad2.cos() * 256.0, 256.0 + rad2.sin() * 256.0)]));
+        }
+        objects.push(Object {
+            shape: shapes,
+            image: &image
+        })
     }
 
     let scene = Scene {
         width: 1920,
         height: 1080,
         layers: vec![Layer {
-            objects: vec![
-                Object {
-                    shape: shapes,
-                    image: &image
-                }
-            ]
+            objects
         }]
     };
 
+    let mut fps = fps_counter::FPSCounter::new();
+
     loop {
-        println!("render");
+        //println!("render");
         //rd.start_frame_capture(std::ptr::null(), std::ptr::null());
         renderer.render(&scene, &canvas);
         //rd.end_frame_capture(std::ptr::null(), std::ptr::null());
-        println!("into bitmap");
+        //println!("into bitmap");
         block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+        println!("{:?}", fps.tick());
     }
 
     println!("save to png");
