@@ -61,14 +61,12 @@ pub mod renderer {
 }
 
 pub mod wgpu_renderer {
-    use std::ops::Deref;
     use std::usize;
 
     use crate::core;
     use crate::renderer;
     use async_trait::async_trait;
     use tiny_skia::Pixmap;
-    use wgpu::util::BufferInitDescriptor;
     use wgpu::util::DeviceExt;
     use wgpu::*;
 
