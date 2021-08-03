@@ -90,13 +90,13 @@ mod timeline {
     };
 
     pub struct Timeline {
-        
+        layer_size: u32
     }
 
     impl Timeline {
-        pub fn new() -> Self {
+        pub fn new(layer_size: u32) -> Self {
             Self {
-
+                layer_size
             }
         }
     }
@@ -119,14 +119,14 @@ mod timeline {
             limits: &layout::Limits,
         ) -> layout::Node {
             println!("{:?}", limits.max());
-            layout::Node::new(limits.max())
+            layout::Node::new(Size::new(limits.max().width, self.layer_size as f32 * 10.0))
         }
 
         fn hash_layout(&self, state: &mut Hasher) {
             use std::hash::Hash;
 
             //self.radius.to_bits().hash(state);
-            "".hash(state);
+            self.layer_size.hash(state);
         }
 
         fn draw(
@@ -141,7 +141,7 @@ mod timeline {
                 Primitive::Quad {
                     bounds: layout.bounds(),
                     background: Background::Color(Color::BLACK),
-                    border_radius: layout.bounds().width,
+                    border_radius: 0.0,
                     border_width: 0.0,
                     border_color: Color::TRANSPARENT,
                 },
@@ -162,33 +162,30 @@ mod timeline {
 
 use circle::Circle;
 use timeline::Timeline;
-use iced::{
-    slider, Align, Column, Container, Element, Length, Sandbox, Settings,
-    Slider, Text,
-};
+use iced::{Align, Button, Column, Container, Element, Length, Sandbox, Scrollable, Settings, Slider, Text, button::State, slider};
 
 pub fn main() -> iced::Result {
     Example::run(Settings::default())
 }
 
+#[derive(Default)]
 struct Example {
-    radius: f32,
     slider: slider::State,
+    layer_count: u32,
+    increment_button: iced::button::State,
+    scroll: iced::scrollable::State
 }
 
 #[derive(Debug, Clone, Copy)]
 enum Message {
-    RadiusChanged(f32),
+    AddLayer,
 }
 
 impl Sandbox for Example {
     type Message = Message;
 
     fn new() -> Self {
-        Example {
-            radius: 50.0,
-            slider: slider::State::new(),
-        }
+        Example::default()
     }
 
     fn title(&self) -> String {
@@ -197,8 +194,8 @@ impl Sandbox for Example {
 
     fn update(&mut self, message: Message) {
         match message {
-            Message::RadiusChanged(radius) => {
-                self.radius = radius;
+            Message::AddLayer => {
+                self.layer_count += 1
             }
         }
     }
@@ -209,16 +206,15 @@ impl Sandbox for Example {
             .spacing(20)
             .max_width(500)
             .align_items(Align::Center)
-            .push(Timeline::new())
-            .push(Text::new(format!("Radius: {:.2}", self.radius)))
             .push(
-                Slider::new(
-                    &mut self.slider,
-                    1.0..=100.0,
-                    self.radius,
-                    Message::RadiusChanged,
-                )
-                .step(0.01),
+                Scrollable::new(&mut self.scroll)
+                    .push(
+                        Timeline::new(self.layer_count)
+                    )
+            )
+            .push(
+                Button::new(&mut self.increment_button, Text::new("Add layer"))
+                    .on_press(Message::AddLayer)
             );
 
         Container::new(content)
