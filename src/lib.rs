@@ -145,6 +145,12 @@ pub mod wgpu_renderer {
                 height: scene.height,
                 present_mode: wgpu::PresentMode::Mailbox,
             };
+            let shader = self.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("shader.wgsl"))),
+                flags: ShaderFlags::empty(),
+            });
+
             for layer in &scene.layers {
                 for object in &layer.objects {
                     let image = object.image;
@@ -157,12 +163,6 @@ pub mod wgpu_renderer {
                             },
                         ],
                         label: None,
-                    });
-
-                    let shader = self.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
-                        label: None,
-                        source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("shader.wgsl"))),
-                        flags: ShaderFlags::empty(),
                     });
 
                     let vertex_size = std::mem::size_of::<core::Vertex>();
@@ -226,12 +226,6 @@ pub mod wgpu_renderer {
                         });
 
                         rpass.set_pipeline(&pipeline);
-                        
-                        //rpass.set_index_buffer(index_buf.slice(..), wgpu::IndexFormat::Uint16);
-                        
-                        //rpass.draw_indexed(0..index_count as u32, 0, 0..1);
-
-                        /**/
 
                         for shape in &object.shape {
                             let vertex_data: &[core::Vertex] = match(shape) {
