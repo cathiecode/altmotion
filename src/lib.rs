@@ -121,13 +121,13 @@ pub mod project {
         pub name: String
     }
 
-    pub struct Scene {
+    pub struct Sequence {
         pub layers: Vec<Layer>,
         pub clips: HashMap<Id, Clip>
     }
     
     pub struct Project {
-        pub scenes: Scene
+        pub sequences: Sequence
     }
 }
 
@@ -143,6 +143,37 @@ pub mod renderer {
         fn create_image(&mut self, width: usize, height: usize) -> Self::Image;
         fn into_image(&mut self, bitmap: Pixmap, image: &Self::Image);
         async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap);
+    }
+}
+
+pub mod sequence_renderer {
+    use crate::{project::Sequence, renderer::Renderer};
+
+    pub struct SequenceRenderer<'a, 'b, T> where T: Renderer {
+        renderer: &'a T,
+        sequence: &'b Sequence,
+
+        current_frame: u32
+    }
+
+    impl<'a, 'b, T> SequenceRenderer<'a, 'b, T> where T: Renderer {
+        fn new<V>(renderer: &'a V, sequence: &'b Sequence) -> SequenceRenderer<'a, 'b, V> where V: Renderer {
+            SequenceRenderer {
+                renderer,
+                sequence,
+                current_frame: 0
+            }
+        }
+
+        fn jump(&mut self, frame: u32) {
+            // TODO: クリップレンダラのクリア
+            self.current_frame = 0;
+        }
+
+        fn next(&mut self, target: T::Image) {
+            // TODO: クリップレンダラのセットアップとレンダリング
+            self.current_frame += 1;
+        }
     }
 }
 
