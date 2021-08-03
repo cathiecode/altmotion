@@ -45,13 +45,37 @@ pub mod core {
     }
 }
 
-pub mod object {
-    pub struct ObjectRenderContext {
+pub mod clip {
+    pub struct ClipRenderContext {
         
     }
 
-    pub trait Object<T> {
-        fn render(context: &ObjectRenderContext) -> crate::core::Object<T>;
+    pub trait Clip<T> {
+        fn new() -> Box<dyn ClipRenderer<T>>;
+    }
+
+    pub trait ClipRenderer<T> {
+        fn render(&mut self, context: &ClipRenderContext) -> Vec<crate::core::Object<T>>;
+    }
+}
+
+pub mod clips {
+    use crate::clip::{Clip, ClipRenderer, ClipRenderContext};
+
+    pub struct NullClip {
+
+    }
+
+    impl<T> ClipRenderer<T> for NullClip {
+        fn render(&mut self, context: &ClipRenderContext) -> Vec<crate::core::Object<T>> {
+            Vec::new()
+        }
+    }
+
+    impl<T> Clip<T> for NullClip {
+        fn new() -> Box<dyn ClipRenderer<T>> {
+            Box::new(NullClip {})
+        }
     }
 }
 
@@ -72,25 +96,25 @@ pub mod project {
         pub interpolator: Interpolator
     }
 
-    pub enum ObjectPropValue {
+    pub enum ClipPropValue {
         Integer(Interpolable<u64>),
         Real(Interpolable<f64>)
     }
 
-    pub struct ObjectProp {
+    pub struct ClipProp {
         pub name: String,
         pub id: Id,
-        pub value: ObjectPropValue
+        pub value: ClipPropValue
     }
 
-    pub struct Object {
+    pub struct Clip {
         pub name: String,
         pub layer: u32,
         pub start: u32,
         pub end: u32,
-        pub props: Vec<ObjectProp>,
+        pub props: Vec<ClipProp>,
         // pub composite_mode: CompositeMode, // + 描画なしモードもここに(clip用)
-        // pub clip_by: Id // Object clipping,
+        // pub clip_by: enum ClipBy{ Above / Object(Id) } NOTE: Objectによるclipの実装はたぶん面倒なのでAboveだけにしといたほうがいいかもしれない
     }
 
     pub struct Layer {
@@ -99,7 +123,7 @@ pub mod project {
 
     pub struct Scene {
         pub layers: Vec<Layer>,
-        pub objects: HashMap<Id, Object>
+        pub clips: HashMap<Id, Clip>
     }
     
     pub struct Project {
