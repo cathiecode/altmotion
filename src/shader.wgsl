@@ -3,11 +3,6 @@ struct VertexOutput {
     [[builtin(position)]] position: vec4<f32>;
 };
 
-[[block]]
-struct Locals {
-    transform: mat4x4<f32>;
-};
-
 [[stage(vertex)]]
 fn vs_main(
     [[location(0)]] position: vec3<f32>,
@@ -15,12 +10,12 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
     out.tex_coord = tex_coord;
-    out.position = vec4<f32>(position, 0.0);
+    out.position = vec4<f32>(position.x, position.y, position.z, 1.0);
     return out;
 }
 
 [[group(0), binding(0)]]
-var r_color: texture_2d< f32 >;
+var r_color: texture_2d<f32>;
 
 [[stage(fragment)]]
 fn fs_main(in: VertexOutput) -> [[location(0)]] vec4<f32> {

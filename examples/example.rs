@@ -31,7 +31,10 @@ fn main() {
         layers: vec![Layer {
             objects: vec![
                 Object {
-                    shape: vec![Shape::Triangle([Vertex(250.0, 0.0, 0.0, 0.0, 0.0), Vertex(500.0, 500.0, 0.0, 0.0, 0.0), Vertex(0.0, 500.0, 0.0, 0.0, 0.0)])],
+                    shape: vec![
+                        Shape::Triangle([Vertex(-1.0, -1.0, 0.0, 0.0, 0.0), Vertex(1.0, -1.0, 0.0, 512.0, 0.0), Vertex(-1.0, 1.0, 0.0, 0.0, 512.0)]),
+                        Shape::Triangle([Vertex(1.0, -1.0, 0.0, 512.0, 0.0), Vertex(-1.0, 1.0, 0.0, 0.0, 512.0), Vertex(1.0, 1.0, 0.0, 512.0, 512.0)])
+                    ],
                     image: &image
                 }
             ]

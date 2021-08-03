@@ -118,24 +118,36 @@ pub mod wgpu_renderer {
     impl renderer::Renderer for WGpuRenderer {
         type Image = WGpuTexture;
         fn render(&mut self, scene: core::Scene<Self::Image>, dest: &Self::Image) {
+            let bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStage::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            sample_type: wgpu::TextureSampleType::Float{filterable: true},
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                ],
+            });
+            let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: None,
+                bind_group_layouts: &[&bind_group_layout],
+                push_constant_ranges: &[],
+            });
+            let sc_desc = wgpu::SwapChainDescriptor {
+                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+                format: TextureFormat::Rgba8UnormSrgb,
+                width: scene.width,
+                height: scene.height,
+                present_mode: wgpu::PresentMode::Mailbox,
+            };
             for layer in &scene.layers {
                 for object in &layer.objects {
                     let image = object.image;
-                    let bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                        label: None,
-                        entries: &[
-                            wgpu::BindGroupLayoutEntry {
-                                binding: 0,
-                                visibility: wgpu::ShaderStage::FRAGMENT,
-                                ty: wgpu::BindingType::Texture {
-                                    multisampled: false,
-                                    sample_type: wgpu::TextureSampleType::Float{filterable: true},
-                                    view_dimension: wgpu::TextureViewDimension::D2,
-                                },
-                                count: None,
-                            },
-                        ],
-                    });
                     let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                         layout: &bind_group_layout,
                         entries: &[
@@ -147,25 +159,11 @@ pub mod wgpu_renderer {
                         label: None,
                     });
 
-                    let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                        label: None,
-                        bind_group_layouts: &[&bind_group_layout],
-                        push_constant_ranges: &[],
-                    });
-
                     let shader = self.device.create_shader_module(&wgpu::ShaderModuleDescriptor {
                         label: None,
                         source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!("shader.wgsl"))),
                         flags: ShaderFlags::empty(),
                     });
-
-                    let sc_desc = wgpu::SwapChainDescriptor {
-                        usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-                        format: TextureFormat::Rgba8UnormSrgb,
-                        width: scene.width,
-                        height: scene.height,
-                        present_mode: wgpu::PresentMode::Mailbox,
-                    };
 
                     let vertex_size = std::mem::size_of::<core::Vertex>();
                     let vertex_buffers = [wgpu::VertexBufferLayout {
@@ -200,7 +198,7 @@ pub mod wgpu_renderer {
                             targets: &[sc_desc.format.into()],
                         }),
                         primitive: wgpu::PrimitiveState {
-                            cull_mode: Some(wgpu::Face::Back), // TODO: あやしい
+                            cull_mode: None, // TODO: あやしい
                             ..wgpu::PrimitiveState::default()
                         },
                         depth_stencil: None,
