@@ -17,3 +17,6 @@ env_logger = "0.9.0"
 renderdoc = "0.10.1"
 fps_counter = "2.0.0"
 
+iced = { version = "0.3.0", default-features=false, features = ["glow"] } # I'm using glow backend because current iced_wgpu conflicts with wgpu 0.9.0!
+iced_graphics = "0.2.0"
+iced_native = "0.4.0"
