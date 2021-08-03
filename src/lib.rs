@@ -96,7 +96,9 @@ pub mod clips {
 }
 
 pub mod project {
-    use std::collections::{BTreeMap, HashMap};
+    use std::collections::{BTreeMap, BTreeSet, HashMap};
+
+    use timeliner::{Timeline, TimelineItem};
 
     type Id = String;
 
@@ -133,8 +135,21 @@ pub mod project {
         // pub clip_by: enum ClipBy{ Above / Object(Id) } NOTE: Objectによるclipの実装はたぶん面倒なのでAboveだけにしといたほうがいいかもしれない
     }
 
+    impl TimelineItem for Clip {
+        type Pos = u32;
+
+        fn start(&self) -> Self::Pos {
+            self.start
+        }
+
+        fn end(&self) -> Self::Pos {
+            self.end
+        }
+    }
+
     pub struct Layer {
-        pub name: String
+        pub name: String,
+        pub clips: Timeline<Clip>
     }
 
     #[derive(Default)]
@@ -193,6 +208,9 @@ pub mod sequence_renderer {
 
         pub fn next(&mut self, target: &T::Image) {
             // TODO: クリップレンダラのセットアップとレンダリング
+            for layer in &self.sequence.layers {
+                
+            }
             self.current_frame += 1;
         }
 
