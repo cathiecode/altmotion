@@ -26,7 +26,7 @@ fn main() {
 
     println!("build scene");
     let mut objects: Vec<Object<<WGpuRenderer<'_> as Renderer>::Image>> = Vec::new();
-    for _ in 0..10 {
+    for _ in 0..100 {
         let mut shapes: Vec<Shape> = Vec::new();
 
         for i in 0..100 {
@@ -50,15 +50,22 @@ fn main() {
 
     let mut fps = fps_counter::FPSCounter::new();
 
+    // /* // ベンチマークをしたい時はこの行をコメントアウト
     loop {
-        //println!("render");
-        //rd.start_frame_capture(std::ptr::null(), std::ptr::null());
         renderer.render(&scene, &canvas);
-        //rd.end_frame_capture(std::ptr::null(), std::ptr::null());
-        //println!("into bitmap");
         block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
         println!("{:?}", fps.tick());
     }
+    // */
+    
+    println!("render");
+    rd.start_frame_capture(std::ptr::null(), std::ptr::null());
+    renderer.render(&scene, &canvas);
+    rd.end_frame_capture(std::ptr::null(), std::ptr::null());
+
+    println!("into bitmap");
+    block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+
 
     println!("save to png");
     bit_canvas.save_png("test.png").unwrap();
