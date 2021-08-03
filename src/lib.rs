@@ -54,7 +54,8 @@ pub mod renderer {
     pub trait Renderer {
         type Image;
         fn render(&mut self, scene: &core::Scene<Self::Image>, dest: &Self::Image); // TODO: TargetをImageで受けとるようにする
-        fn into_image(&mut self, bitmap: Pixmap) -> Self::Image;
+        fn create_image(&mut self, width: usize, height: usize) -> Self::Image;
+        fn into_image(&mut self, bitmap: Pixmap, image: &Self::Image);
         async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap);
     }
 }
@@ -79,7 +80,8 @@ pub mod wgpu_renderer {
         pub buffer_dimensions: BufferDimensions,
         pub default_view: wgpu::TextureView,
         pub render_pipeline: wgpu::RenderPipeline,
-        pub bind_group: wgpu::BindGroup
+        pub bind_group: wgpu::BindGroup,
+        pub extent: wgpu::Extent3d
     }
 
     pub struct WGpuRenderer<'a> {
@@ -247,15 +249,15 @@ pub mod wgpu_renderer {
             self.queue.submit(Some(encoder.finish()));
         }
 
-        fn into_image(&mut self, image: tiny_skia::Pixmap) -> Self::Image {
-            let texture_extent = wgpu::Extent3d {
-                width: image.width(),
-                height: image.height(),
+        fn create_image(&mut self, width: usize, height: usize) -> Self::Image {
+            let extent = wgpu::Extent3d {
+                width: width as u32,
+                height: height as u32,
                 depth_or_array_layers: 1,
             };
             let texture = self.device.create_texture(&wgpu::TextureDescriptor {
                 label: None,
-                size: texture_extent,
+                size: extent,
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -263,31 +265,13 @@ pub mod wgpu_renderer {
                 usage: wgpu::TextureUsage::all() & !(wgpu::TextureUsage::STORAGE), // OPTIMIZE: Performance problem
             });
             let buffer_dimensions =
-                BufferDimensions::new(image.width() as usize, image.height() as usize);
+            BufferDimensions::new(width, height);
             let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
                 label: None,
                 size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
                 usage: wgpu::BufferUsage::MAP_READ | wgpu::BufferUsage::COPY_DST,
                 mapped_at_creation: false,
             });
-            println!("Width: {}", image.width());
-            self.queue.write_texture(
-                wgpu::ImageCopyTexture {
-                    texture: &texture,
-                    mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
-                },
-                image.data(),
-                wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(std::num::NonZeroU32::new(image.width() * 4).unwrap()), // NOTE: 4 for RGBA(u8, u8, u8, u8)
-                    rows_per_image: Some(std::num::NonZeroU32::new(image.height()).unwrap()),
-                },
-                texture_extent,
-            );
-
-            self.queue.submit(None);
-
             let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &self.bind_group_layout,
                 entries: &[wgpu::BindGroupEntry {
@@ -324,17 +308,39 @@ pub mod wgpu_renderer {
                     });
             
             let default_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
             return WGpuTexture {
                 texture,
                 buffer,
                 buffer_dimensions,
-                width: image.width() as usize,
-                height: image.height() as usize,
+                width: width as usize,
+                height: height as usize,
                 bind_group,
                 render_pipeline,
-                default_view
+                default_view,
+                extent
             };
+        }
+
+        fn into_image(&mut self, bitmap: tiny_skia::Pixmap, image: &Self::Image) {
+            if bitmap.width() != image.width as u32 || bitmap.height() != image.height as u32 {
+                panic!("image does not fit!");
+            }
+            self.queue.write_texture(
+                wgpu::ImageCopyTexture {
+                    texture: &image.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                },
+                bitmap.data(),
+                wgpu::ImageDataLayout {
+                    offset: 0,
+                    bytes_per_row: Some(std::num::NonZeroU32::new(bitmap.width() * 4).unwrap()), // NOTE: 4 for RGBA(u8, u8, u8, u8)
+                    rows_per_image: Some(std::num::NonZeroU32::new(bitmap.height()).unwrap()),
+                },
+                image.extent,
+            );
+
+            self.queue.submit(None);
         }
 
         async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap) {

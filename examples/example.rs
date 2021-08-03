@@ -16,10 +16,13 @@ fn main() {
     let mut initial_image = Pixmap::load_png("texture.png").unwrap();
 
     println!("create image");
-    let mut image = renderer.into_image(initial_image);
+
+    let mut image = renderer.create_image(initial_image.width() as usize, initial_image.height() as usize);
+    renderer.into_image(initial_image, &image);
 
     println!("create canvas");
-    let canvas = renderer.into_image(Pixmap::new(1920, 1080).unwrap());
+    let canvas = renderer.create_image(1920, 1080);
+    //renderer.into_image(Pixmap::new(1920, 1080).unwrap(), &canvas);
 
     println!("create bitmap output");
     let mut bit_canvas = Pixmap::new(1920, 1080).unwrap();
@@ -50,7 +53,7 @@ fn main() {
 
     let mut fps = fps_counter::FPSCounter::new();
 
-    // /* // ベンチマークをしたい時はこの行をコメントアウト
+    /* // ベンチマークをしたい時はこの行をコメントアウト
     loop {
         renderer.render(&scene, &canvas);
         block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
