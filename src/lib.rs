@@ -88,7 +88,7 @@ pub mod clips {
         }
     }
 
-    fn builtin_clip_registory<T>() -> ClipRegistory<T> {
+    pub fn builtin_clip_registory<T>() -> ClipRegistory<T> {
         let mut reg: ClipRegistory<T> = HashMap::new();
         reg.insert("altmotion.builtin.null", Box::new(NullClip));
         reg
@@ -137,6 +137,7 @@ pub mod project {
         pub name: String
     }
 
+    #[derive(Default)]
     pub struct Sequence {
         pub layers: Vec<Layer>,
         pub clips: HashMap<Id, Clip>
@@ -175,7 +176,7 @@ pub mod sequence_renderer {
     }
 
     impl<'a, T> SequenceRenderer<'a, T> where T: Renderer {
-        fn new<V>(renderer: &'a V, clip_registory: &'a ClipRegistory<V>, sequence: &'a Sequence) -> SequenceRenderer<'a, V> where V: Renderer {
+        pub fn new<V>(renderer: &'a V, clip_registory: &'a ClipRegistory<V>, sequence: &'a Sequence) -> SequenceRenderer<'a, V> where V: Renderer {
             SequenceRenderer {
                 renderer,
                 clip_registory,
@@ -185,14 +186,18 @@ pub mod sequence_renderer {
             }
         }
 
-        fn jump(&mut self, frame: u32) {
+        pub fn jump(&mut self, frame: u32) {
             // TODO: クリップレンダラのクリア
-            self.current_frame = 0;
+            self.current_frame = frame;
         }
 
-        fn next(&mut self, target: T::Image) {
+        pub fn next(&mut self, target: &T::Image) {
             // TODO: クリップレンダラのセットアップとレンダリング
             self.current_frame += 1;
+        }
+
+        pub fn current_frame(&self) -> u32 {
+            self.current_frame
         }
     }
 }

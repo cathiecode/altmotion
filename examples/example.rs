@@ -74,4 +74,12 @@ fn main() {
     bit_canvas.save_png("test.png").unwrap();
 
     println!("done");
+
+    let renderer = block_on(WGpuRenderer::new());
+    let clip_registory = altmotion::clips::builtin_clip_registory();
+    let sequence = altmotion::project::Sequence::default();
+    let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&renderer, &clip_registory, &sequence);
+    loop {
+        seq_renderer.next(&canvas);
+    }
 }
