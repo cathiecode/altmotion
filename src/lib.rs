@@ -209,7 +209,7 @@ pub mod sequence_renderer {
         pub fn next(&mut self, target: &T::Image) {
             // TODO: クリップレンダラのセットアップとレンダリング
             for layer in &self.sequence.layers {
-                
+                layer.clips.get(self.current_frame);
             }
             self.current_frame += 1;
         }

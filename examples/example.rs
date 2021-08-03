@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
 use altmotion::core::*;
 use altmotion::renderer::*;
 use altmotion::wgpu_renderer::*;
+use timeliner::Timeline;
 use tiny_skia::Pixmap;
 
 use async_std::task::block_on;
@@ -77,9 +80,19 @@ fn main() {
 
     let renderer = block_on(WGpuRenderer::new());
     let clip_registory = altmotion::clips::builtin_clip_registory();
-    let sequence = altmotion::project::Sequence::default();
+    let sequence = altmotion::project::Sequence {
+        layers: vec![
+            altmotion::project::Layer {
+                name: "Test layer 1".to_owned(),
+                clips: Timeline::new()
+            }
+        ],
+        clips: HashMap::new(),
+    };
+
     let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&renderer, &clip_registory, &sequence);
     loop {
         seq_renderer.next(&canvas);
+        println!("{:?}", fps.tick());
     }
 }
