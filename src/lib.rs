@@ -53,7 +53,7 @@ pub mod renderer {
     #[async_trait]
     pub trait Renderer {
         type Image;
-        fn render(&mut self, scene: core::Scene<Self::Image>, dest: &Self::Image); // TODO: TargetをImageで受けとるようにする
+        fn render(&mut self, scene: &core::Scene<Self::Image>, dest: &Self::Image); // TODO: TargetをImageで受けとるようにする
         fn into_image(&mut self, bitmap: Pixmap) -> Self::Image;
         async fn into_bitmap(&mut self, image: &Self::Image, dest: &mut Pixmap);
     }
@@ -79,14 +79,18 @@ pub mod wgpu_renderer {
         pub buffer_dimensions: BufferDimensions,
     }
 
-    pub struct WGpuRenderer {
+    pub struct WGpuRenderer<'a> {
         adapter: wgpu::Adapter,
         device: wgpu::Device,
         queue: wgpu::Queue,
+        bind_group_layout: wgpu::BindGroupLayout,
+        pipeline_layout: wgpu::PipelineLayout,
+        shader: wgpu::ShaderModule,
+        vertex_buffers: [wgpu::VertexBufferLayout<'a>; 1]
     }
 
-    impl WGpuRenderer {
-        pub async fn new() -> Self {
+    impl<'a> WGpuRenderer<'a> {
+        pub async fn new() -> WGpuRenderer<'a> {
             let adapter = wgpu::Instance::new(wgpu::BackendBit::PRIMARY)
                 .request_adapter(&wgpu::RequestAdapterOptions::default())
                 .await
@@ -104,22 +108,8 @@ pub mod wgpu_renderer {
                 .await
                 .unwrap();
 
-            println!("Greeting from WGpu Renderer! ({:?})", adapter.get_info());
-
-            WGpuRenderer {
-                adapter,
-                device,
-                queue
-            }
-        }
-    }
-
-    #[async_trait]
-    impl renderer::Renderer for WGpuRenderer {
-        type Image = WGpuTexture;
-        fn render(&mut self, scene: core::Scene<Self::Image>, dest: &Self::Image) {
             let bind_group_layout =
-                self.device
+                device
                     .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                         label: None,
                         entries: &[wgpu::BindGroupLayoutEntry {
@@ -134,29 +124,23 @@ pub mod wgpu_renderer {
                         }],
                     });
             let pipeline_layout =
-                self.device
+                device
                     .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: None,
                         bind_group_layouts: &[&bind_group_layout],
                         push_constant_ranges: &[],
                     });
-            let sc_desc = wgpu::SwapChainDescriptor {
-                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
-                format: TextureFormat::Rgba8UnormSrgb,
-                width: scene.width,
-                height: scene.height,
-                present_mode: wgpu::PresentMode::Mailbox,
-            };
-            let shader = self
-                .device
-                .create_shader_module(&wgpu::ShaderModuleDescriptor {
-                    label: None,
-                    source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
-                        "shader.wgsl"
-                    ))),
-                    flags: ShaderFlags::empty(),
-                });
-
+            
+            let shader =
+                    device
+                    .create_shader_module(&wgpu::ShaderModuleDescriptor {
+                        label: None,
+                        source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Borrowed(include_str!(
+                            "shader.wgsl"
+                        ))),
+                        flags: ShaderFlags::empty(),
+                    });
+            
             let vertex_size = std::mem::size_of::<core::Vertex>();
             let vertex_buffers = [wgpu::VertexBufferLayout {
                 array_stride: vertex_size as wgpu::BufferAddress,
@@ -174,6 +158,34 @@ pub mod wgpu_renderer {
                     },
                 ],
             }];
+        
+
+
+            println!("Greeting from WGpu Renderer! ({:?})", adapter.get_info());
+
+            WGpuRenderer {
+                adapter,
+                device,
+                queue,
+                bind_group_layout,
+                pipeline_layout,
+                shader,
+                vertex_buffers
+            }
+        }
+    }
+
+    #[async_trait]
+    impl<'a> renderer::Renderer for WGpuRenderer<'a> {
+        type Image = WGpuTexture;
+        fn render(&mut self, scene: &core::Scene<Self::Image>, dest: &Self::Image) {
+            let sc_desc = wgpu::SwapChainDescriptor {
+                usage: wgpu::TextureUsage::RENDER_ATTACHMENT,
+                format: TextureFormat::Rgba8UnormSrgb,
+                width: scene.width,
+                height: scene.height,
+                present_mode: wgpu::PresentMode::Mailbox,
+            };
 
             let mut vertex_buffer_src: Vec<u8> = Vec::new();
             for layer in &scene.layers {
@@ -201,7 +213,7 @@ pub mod wgpu_renderer {
                 for object in &layer.objects {
                     let image = object.image;
                     let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &bind_group_layout,
+                        layout: &self.bind_group_layout,
                         entries: &[wgpu::BindGroupEntry {
                             binding: 0,
                             resource: wgpu::BindingResource::TextureView(
@@ -217,16 +229,16 @@ pub mod wgpu_renderer {
                         self.device
                             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                                 label: None,
-                                layout: Some(&pipeline_layout),
+                                layout: Some(&self.pipeline_layout),
                                 vertex: wgpu::VertexState {
-                                    module: &shader,
+                                    module: &self.shader,
                                     entry_point: "vs_main",
-                                    buffers: &vertex_buffers, // TODO
+                                    buffers: &self.vertex_buffers, // TODO
                                 },
                                 fragment: Some(wgpu::FragmentState {
-                                    module: &shader,
+                                    module: &self.shader,
                                     entry_point: "fs_main",
-                                    targets: &[sc_desc.format.into()],
+                                    targets: &[sc_desc.format.into()], // これさえなければ先に作っておけるんですが…
                                 }),
                                 primitive: wgpu::PrimitiveState {
                                     cull_mode: None, // TODO: あやしい

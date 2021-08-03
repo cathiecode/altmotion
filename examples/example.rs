@@ -46,13 +46,14 @@ fn main() {
         }]
     };
 
-    println!("render");
-    rd.start_frame_capture(std::ptr::null(), std::ptr::null());
-    renderer.render(scene, &canvas);
-    rd.end_frame_capture(std::ptr::null(), std::ptr::null());
-
-    println!("into bitmap");
-    block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+    loop {
+        println!("render");
+        //rd.start_frame_capture(std::ptr::null(), std::ptr::null());
+        renderer.render(&scene, &canvas);
+        //rd.end_frame_capture(std::ptr::null(), std::ptr::null());
+        println!("into bitmap");
+        block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+    }
 
     println!("save to png");
     bit_canvas.save_png("test.png").unwrap();
