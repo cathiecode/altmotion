@@ -6,8 +6,7 @@ type Id = String;
 
 #[derive(Debug)]
 pub enum Interpolator {
-    Linear,
-    Custom(Id)
+    Linear
 }
 
 #[derive(Debug)]

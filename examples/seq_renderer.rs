@@ -22,16 +22,44 @@ fn main() {
     println!("create bitmap output");
     let mut bit_canvas = Pixmap::new(1920, 1080).unwrap();
 
-
     let mut fps = fps_counter::FPSCounter::new();
-    
-    renderer = block_on(WGpuRenderer::new());
+
     let mut clip_registory = altmotion::clips::builtin_clip_registory();
 
     let sequence = altmotion::project::Sequence {
         layers: vec![
             altmotion::project::Layer {
                 name: "layer 1".to_owned(),
+                clips: {
+                    let mut timeline = Timeline::new();
+                    timeline.insert(Clip {
+                        name: "Null clip".to_owned(),
+                        start: 0,
+                        end: 2,
+                        props: Vec::new(),
+                        renderer_id: "altmotion.builtin.null"
+                    }).unwrap();
+
+                    timeline
+                }
+            },
+            altmotion::project::Layer {
+                name: "layer 2".to_owned(),
+                clips: {
+                    let mut timeline = Timeline::new();
+                    timeline.insert(Clip {
+                        name: "Null clip".to_owned(),
+                        start: 0,
+                        end: 2,
+                        props: Vec::new(),
+                        renderer_id: "altmotion.builtin.null"
+                    }).unwrap();
+
+                    timeline
+                }
+            },
+            altmotion::project::Layer {
+                name: "layer 3".to_owned(),
                 clips: {
                     let mut timeline = Timeline::new();
                     timeline.insert(Clip {
