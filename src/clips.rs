@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::clip::{ClipRegistory, ClipRenderContext, ClipRenderer, ClipRendererFactory, Id};
 

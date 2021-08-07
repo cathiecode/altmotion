@@ -19,6 +19,10 @@ fn main() {
     println!("create canvas");
     let canvas = renderer.create_image(1920, 1080);
 
+    println!("create bitmap output");
+    let mut bit_canvas = Pixmap::new(1920, 1080).unwrap();
+
+
     let mut fps = fps_counter::FPSCounter::new();
     
     renderer = block_on(WGpuRenderer::new());
@@ -47,8 +51,10 @@ fn main() {
         height: 1080,
     };
 
-    let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&renderer, &mut clip_registory, &sequence);
-    seq_renderer.next(&canvas);
-    seq_renderer.next(&canvas);
-    seq_renderer.next(&canvas);
+    let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&mut clip_registory, &sequence);
+    loop {
+        seq_renderer.next(&mut renderer, &canvas);
+        block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+        println!("{}", fps.tick());
+    }
 }

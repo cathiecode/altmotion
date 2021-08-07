@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use bytemuck::{Pod, Zeroable};
 
 #[repr(C)]
@@ -20,17 +22,17 @@ pub enum Shape {
     Triangle(Triangle),
 }
 
-pub struct Object<'a, T> {
-    pub image: &'a T,
+pub struct Object<T> {
+    pub image: Rc<RefCell<T>>,
     pub shape: Vec<Shape>,
 }
 
-pub struct Layer<'a, T> {
-    pub objects: Vec<Object<'a, T>>,
+pub struct Layer<T> {
+    pub objects: Vec<Object<T>>,
 }
 
-pub struct Scene<'a, T> {
-    pub layers: Vec<Layer<'a, T>>,
+pub struct Scene<T> {
+    pub layers: Vec<Layer<T>>,
     pub width: u32,
     pub height: u32,
 }

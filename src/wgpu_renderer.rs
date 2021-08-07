@@ -151,7 +151,7 @@ impl<'a> renderer::Renderer for WGpuRenderer<'a> {
         let mut buffer_offset = 0;
         for layer in &scene.layers {
             for object in &layer.objects {
-                let image = object.image;
+                let image = object.image.borrow();
                 // TODO: bind_groupとpipelineをImageにもたせて使いまわす
 
                 let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
