@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
-use crate::clip::{Clip, ClipRegistory, ClipRenderContext, ClipRenderer};
+use crate::clip::{ClipRegistory, ClipRenderContext, ClipRenderer, ClipRendererFactory, Id};
 
 pub struct NullClipRenderer {
 
@@ -14,9 +14,13 @@ impl<T> ClipRenderer<T> for NullClip {
 
 pub struct NullClip;
 
-impl<T> Clip<T> for NullClip {
+impl<T> ClipRendererFactory<T> for NullClip {
     fn new(&mut self) -> Box<dyn ClipRenderer<T>> {
         Box::new(NullClip {})
+    }
+
+    fn id(&self) -> Id {
+        "altmotion.builtin.null"
     }
 }
 

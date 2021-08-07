@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
+use altmotion::clips::NullClip;
 use altmotion::core::*;
+use altmotion::project::Clip;
 use altmotion::renderer::*;
 use altmotion::wgpu_renderer::*;
 use timeliner::Timeline;
@@ -77,20 +79,33 @@ fn main() {
     bit_canvas.save_png("test.png").unwrap();
 
     println!("done");
+    renderer = block_on(WGpuRenderer::new());
+    let mut clip_registory = altmotion::clips::builtin_clip_registory();
 
-    let renderer = block_on(WGpuRenderer::new());
-    let clip_registory = altmotion::clips::builtin_clip_registory();
     let sequence = altmotion::project::Sequence {
         layers: vec![
             altmotion::project::Layer {
-                name: "Test layer 1".to_owned(),
-                clips: Timeline::new()
+                name: "layer 1".to_owned(),
+                clips: {
+                    let mut timeline = Timeline::new();
+                    timeline.insert(Clip {
+                        name: "Null clip".to_owned(),
+                        start: 0,
+                        end: std::u32::MAX,
+                        props: Vec::new(),
+                        renderer_id: "altmotion.builtin.null"
+                    }).unwrap();
+
+                    timeline
+                }
             }
         ],
         clips: HashMap::new(),
+        width: 1920,
+        height: 1080,
     };
 
-    let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&renderer, &clip_registory, &sequence);
+    let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&renderer, &mut clip_registory, &sequence);
     loop {
         seq_renderer.next(&canvas);
         println!("{:?}", fps.tick());

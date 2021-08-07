@@ -1,15 +1,16 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
-type Id = &'static str;
+pub type Id = &'static str;
 
-pub type ClipRegistory<T> = HashMap<Id, Box<dyn Clip<T>>>;
+pub type ClipRegistory<T> = HashMap<Id, Box<dyn ClipRendererFactory<T>>>;
 
 pub struct ClipRenderContext {
     
 }
 
-pub trait Clip<T> {
+pub trait ClipRendererFactory<T> {
     fn new(&mut self) -> Box<dyn ClipRenderer<T>>;
+    fn id(&self) -> Id;
 }
 
 pub trait ClipRenderer<T> {

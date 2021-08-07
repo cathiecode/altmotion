@@ -4,11 +4,13 @@ use timeliner::{Timeline, TimelineItem};
 
 type Id = String;
 
+#[derive(Debug)]
 pub enum Interpolator {
     Linear,
     Custom(Id)
 }
 
+#[derive(Debug)]
 pub struct Interpolable<T> { // NOTE: end_valueの位置はinterpolatorに渡して補間してもらう
     pub start_value: T,
     pub values: BTreeMap<u32, T>,
@@ -16,23 +18,26 @@ pub struct Interpolable<T> { // NOTE: end_valueの位置はinterpolatorに渡し
     pub interpolator: Interpolator
 }
 
+#[derive(Debug)]
 pub enum ClipPropValue {
     Integer(Interpolable<u64>),
     Real(Interpolable<f64>)
 }
 
+#[derive(Debug)]
 pub struct ClipProp {
     pub name: String,
     pub id: Id,
     pub value: ClipPropValue
 }
 
+#[derive(Debug)]
 pub struct Clip {
     pub name: String,
-    pub layer: u32,
     pub start: u32,
     pub end: u32,
     pub props: Vec<ClipProp>,
+    pub renderer_id: crate::clip::Id
     // pub composite_mode: CompositeMode, // + 描画なしモードもここに(clip用)
     // pub clip_by: enum ClipBy{ Above / Object(Id) } NOTE: Objectによるclipの実装はたぶん面倒なのでAboveだけにしといたほうがいいかもしれない
 }
@@ -57,7 +62,9 @@ pub struct Layer {
 #[derive(Default)]
 pub struct Sequence {
     pub layers: Vec<Layer>,
-    pub clips: HashMap<Id, Clip>
+    pub clips: HashMap<Id, Clip>,
+    pub width: u32,
+    pub height: u32
 }
 
 pub struct Project {
