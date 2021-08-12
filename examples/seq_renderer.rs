@@ -33,41 +33,11 @@ fn main() {
                 clips: {
                     let mut timeline = Timeline::new();
                     timeline.insert(Clip {
-                        name: "Null clip".to_owned(),
+                        name: "Test clip".to_owned(),
                         start: 0,
                         end: 2,
                         props: Vec::new(),
-                        renderer_id: "altmotion.builtin.null"
-                    }).unwrap();
-
-                    timeline
-                }
-            },
-            altmotion::project::Layer {
-                name: "layer 2".to_owned(),
-                clips: {
-                    let mut timeline = Timeline::new();
-                    timeline.insert(Clip {
-                        name: "Null clip".to_owned(),
-                        start: 0,
-                        end: 2,
-                        props: Vec::new(),
-                        renderer_id: "altmotion.builtin.null"
-                    }).unwrap();
-
-                    timeline
-                }
-            },
-            altmotion::project::Layer {
-                name: "layer 3".to_owned(),
-                clips: {
-                    let mut timeline = Timeline::new();
-                    timeline.insert(Clip {
-                        name: "Null clip".to_owned(),
-                        start: 0,
-                        end: 2,
-                        props: Vec::new(),
-                        renderer_id: "altmotion.builtin.null"
+                        renderer_id: "altmotion.builtin.test_clip"
                     }).unwrap();
 
                     timeline
