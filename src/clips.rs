@@ -62,7 +62,7 @@ impl<T> ClipRenderer<T> for TestClipRenderer<T> where T: Renderer {
 
 pub struct TestClip;
 
-impl<T> ClipRendererFactory<T> for TestClip where T: Renderer {
+impl<T> ClipRendererFactory<T> for TestClip where T: Renderer + 'static {
     fn new(&mut self, renderer: &mut T) -> Box<dyn ClipRenderer<T>> {
         Box::new(TestClipRenderer::<T> {
             texture: renderer.create_image(100, 100),
@@ -74,7 +74,7 @@ impl<T> ClipRendererFactory<T> for TestClip where T: Renderer {
     }
 }
 
-pub fn builtin_clip_registory<T>() -> ClipRegistory<T> where T: Renderer {
+pub fn builtin_clip_registory<T>() -> ClipRegistory<T> where T: Renderer + 'static {
     let mut reg: ClipRegistory<T> = HashMap::new();
     reg.insert("altmotion.builtin.null", Box::new(NullClip));
     reg.insert("altmotion.bulitin.test_clip", Box::new(TestClip));
