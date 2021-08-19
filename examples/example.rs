@@ -15,7 +15,7 @@ use renderdoc::{RenderDoc, V100, V110};
 
 fn main() {
     env_logger::init();
-    let mut rd: RenderDoc<V110> = RenderDoc::new().expect("Unable to connect");
+    let mut rd: RenderDoc<V110> = RenderDoc::new().expect("Unable to connecat");
     println!("create renderer");
     let mut renderer = block_on(WGpuRenderer::new());
 

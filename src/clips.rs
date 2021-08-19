@@ -8,7 +8,7 @@ pub struct NullClipRenderer {
 
 }
 
-impl<T> ClipRenderer<T> for NullClipRenderer where T: Renderer {
+impl<T> ClipRenderer<T> for NullClipRenderer where T: Renderer + 'static {
     fn render(&mut self, context: &mut ClipRenderContext<T>) -> Vec<crate::core::Object<T::Image>> {
         Vec::new()
     }
@@ -16,7 +16,7 @@ impl<T> ClipRenderer<T> for NullClipRenderer where T: Renderer {
 
 pub struct NullClip;
 
-impl<T> ClipRendererFactory<T> for NullClip where T: Renderer {
+impl<T> ClipRendererFactory<T> for NullClip where T: Renderer + 'static {
     fn new(&mut self, renderer: &mut T) -> Box<dyn ClipRenderer<T>> {
         Box::new(NullClipRenderer {})
     }
@@ -30,7 +30,7 @@ pub struct TestClipRenderer<T> where T: Renderer {
     texture: T::Image
 }
 
-impl<T> ClipRenderer<T> for TestClipRenderer<T> where T: Renderer {
+impl<T> ClipRenderer<T> for TestClipRenderer<T> where T: Renderer + 'static {
     fn render(&mut self, context: &mut ClipRenderContext<T>) -> Vec<crate::core::Object<T::Image>> {
         println!("load image");
         let mut initial_image = Pixmap::load_png("texture.png").unwrap();
@@ -77,6 +77,6 @@ impl<T> ClipRendererFactory<T> for TestClip where T: Renderer + 'static {
 pub fn builtin_clip_registory<T>() -> ClipRegistory<T> where T: Renderer + 'static {
     let mut reg: ClipRegistory<T> = HashMap::new();
     reg.insert("altmotion.builtin.null", Box::new(NullClip));
-    reg.insert("altmotion.bulitin.test_clip", Box::new(TestClip));
+    reg.insert("altmotion.builtin.test_clip", Box::new(TestClip));
     reg
 }

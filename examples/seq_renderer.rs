@@ -35,7 +35,7 @@ fn main() {
                     timeline.insert(Clip {
                         name: "Test clip".to_owned(),
                         start: 0,
-                        end: 2,
+                        end: 10,
                         props: Vec::new(),
                         renderer_id: "altmotion.builtin.test_clip"
                     }).unwrap();
@@ -49,10 +49,13 @@ fn main() {
         height: 1080,
     };
 
+    let mut rd: RenderDoc<V110> = RenderDoc::new().expect("Unable to connecat");
+
     let mut seq_renderer = altmotion::sequence_renderer::SequenceRenderer::<WGpuRenderer>::new(&mut clip_registory, &sequence);
-    loop {
-        seq_renderer.next(&mut renderer, &canvas);
-        block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
-        println!("{}", fps.tick());
-    }
+    rd.start_frame_capture(std::ptr::null(), std::ptr::null());
+    seq_renderer.next(&mut renderer, &canvas);
+    rd.end_frame_capture(std::ptr::null(), std::ptr::null());
+    block_on(renderer.into_bitmap(&canvas, &mut bit_canvas));
+    bit_canvas.save_png("test.png".to_string()).unwrap();
+    println!("Sequence done");
 }

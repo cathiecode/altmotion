@@ -15,6 +15,6 @@ pub trait ClipRendererFactory<T> where T: Renderer {
     fn id(&self) -> Id;
 }
 
-pub trait ClipRenderer<T> where T: Renderer {
+pub trait ClipRenderer<T> where T: Renderer + 'static {
     fn render(&mut self, context: &mut ClipRenderContext<T>) -> Vec<crate::core::Object<T::Image>>;
 }

@@ -9,7 +9,7 @@ pub struct SequenceRenderer<'a, T> where T: Renderer + 'a {
     current_frame: u32,
 }
 
-impl<'a, T> SequenceRenderer<'a, T> where T: Renderer {
+impl<'a, T> SequenceRenderer<'a, T> where T: Renderer + 'static {
     pub fn new<V>(clip_renderer_registory: &'a mut ClipRegistory<V>, sequence: &'a Sequence) -> SequenceRenderer<'a, V> where V: Renderer {
         SequenceRenderer {
             clip_renderer_registory,
